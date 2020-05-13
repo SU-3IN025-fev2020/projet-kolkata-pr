@@ -13,7 +13,6 @@ import pygame
 import glo
 import pathfinding
 import strats
-from strats import Strat_Analyse
 
 import random 
 import numpy as np
@@ -35,7 +34,7 @@ def init(_boardname=None):
     game = Game('Cartes/' + name + '.json', SpriteBuilder)
     game.O = Ontology(True, 'SpriteSheet-32x32/tiny_spritesheet_ontology.csv')
     game.populate_sprite_names(game.O)
-    game.fps = 144  # frames per second
+    game.fps = 5  # frames per second
     game.mainiteration()
     game.mask.allow_overlaping_players = True
     #player = game.player
@@ -43,7 +42,7 @@ def init(_boardname=None):
 def main():
 
     #for arg in sys.argv:
-    iterations = 5 # default
+    iterations = 15 # default
     if len(sys.argv) == 2:
         iterations = int(sys.argv[1])
     print ("Iterations: ")
@@ -60,8 +59,7 @@ def main():
     #-------------------------------
     nbLignes = game.spriteBuilder.rowsize
     nbColonnes = game.spriteBuilder.colsize
-    print("lignes", nbLignes)
-    print("colonnes", nbColonnes)
+
     
     
     players = [o for o in game.layers['joueur']]
@@ -70,37 +68,27 @@ def main():
     
     # on localise tous les états initiaux (loc du joueur)
     initStates = [o.get_rowcol() for o in game.layers['joueur']]
-    print ("Init states:", initStates)
+
     
     
     # on localise tous les objets  ramassables (les restaurants)
     goalStates = [o.get_rowcol() for o in game.layers['ramassable']]
-    print ("Goal states:", goalStates)
+
     nbRestaus = len(goalStates)
         
     # on localise tous les murs
     wallStates = [w.get_rowcol() for w in game.layers['obstacle']]
     #print ("Wall states:", wallStates)
-    print('init',initStates)
-    print('goal',goalStates)
-    print('wall',wallStates)
+
     # on liste toutes les positions permises
     allowedStates = [(x,y) for x in range(nbLignes) for y in range(nbColonnes)\
                      if (x,y) not in wallStates or  goalStates] 
-
-    analyse=Strat_Analyse(len(goalStates))
     
     #-------------------------------
     # Placement aleatoire des joueurs, en évitant les obstacles
     #-------------------------------
 
     liste_gains=[0]*nbPlayers
-    freqentation=[]
-    #inscription à la stratégie d'analyse
-    analyse.suscribe(0)
-    analyse.suscribe(1)
-    analyse.suscribe(2)
-    analyse.suscribe(3)
        
     for i in range(iterations):
         terminé=False
@@ -109,39 +97,34 @@ def main():
         posPlayers = initStates
 
         
-        for j in range(nbPlayers):
-            x,y = random.choice(allowedStates)
-            players[j].set_rowcol(x,y)
-            game.mainiteration()
-            posPlayers[j]=(x,y)
+        x,y=random.choice(allowedStates)
+        players[0].set_rowcol(x,y)
+        game.mainiteration()
+        posPlayers[0]=(x,y)
 
 
             
-
+        print('positions de depart')
+        print(posPlayers)
         #-------------------------------
         # chaque joueur choisit un restaurant
         #-------------------------------
 
-        restau=[0]*nbPlayers
-        for j in range(nbPlayers):
-            if analyse.is_inscrit(j):
-                c=analyse.best_strat(j)
-                print("Strat_Analyse pour joueur",j,c)
-            else :  
-                #c = strats.strat_alea(nbRestaus)              
-                #c=strats.strat_proche(posPlayers[j],goalStates)
-                c=strats.strat_tetue(j,nbRestaus)
-                #c=5
-                print(c)
-               
-            restau[j]=c
+        restau=[0]
+        c=strats.strat_proche(posPlayers[0],goalStates)
+            #c=strats.strat_tetue(j,nbRestaus)
+            #c = strats.strat_alea(nbRestaus)
+        print(c)
+        restau=c
 
-        paths=[0]*nbPlayers
-
+        paths=[0]
         
 
-        for i in range(nbPlayers):
-            paths[i]=pathfinding.Astar(posPlayers[i],goalStates[restau[i]],wallStates)
+
+        paths=pathfinding.Astar(posPlayers[0],goalStates[restau],wallStates)
+
+
+        print(paths)
 
         for i in range(iterations):
             terminé=False
@@ -149,47 +132,36 @@ def main():
 
         while(not(terminé)):
             fin=0
-        
-            for j in range(nbPlayers): # on fait bouger chaque joueur séquentiellement
-                if len(paths[j])>ite :
-                    next_row,next_col=paths[j][ite]
-                    players[j].set_rowcol(next_row,next_col)
-                    print ("pos :", j, next_row,next_col)
-                    game.mainiteration()
-                    posPlayers[j]=(next_row,next_col)
-                else :
-                    print(("Le joueur ", j, " a terminé"))
-                    fin+=1
-                    game.mainiteration()
-            ite+=1
-            if fin==10 :
+    
+            if len(paths)>ite :
+                next_row,next_col=paths[ite]
+                print (paths[ite])
+                ite+=1
+                players[0].set_rowcol(next_row,next_col)
+                print ("pos :", next_row,next_col)
+                game.mainiteration()
+                posPlayers[0]=(next_row,next_col)
+            else :
+                print(("Le joueur ", " a terminé"))
                 terminé=True
-                print('Fin du tour : distribution des gains')
-                for v in range(len(goalStates)):
-                    gagnants=[]
-                    for g in range(nbPlayers):
-                        if posPlayers[g]==goalStates[v] :
-                            gagnants.append(g)
-                    if len(gagnants)!=0 :
-                        gagnant=random.choice(gagnants)
-                        liste_gains[gagnant]+=1
-                    tab_fin=[0]*len(goalStates)
-                for q in range(len(tab_fin)):
-                    for y in range(nbPlayers):
-                        if posPlayers[y]==goalStates[q] :
-                            tab_fin[q]+=1
-                for u in range(nbPlayers):
-                    if analyse.is_inscrit(u) :
-                        fin=-1
-                        for p in range(len(goalStates)) :
-                            if posPlayers[u]==goalStates[p]:
-                                fin=p
-                        analyse.actualiser_resultats(u ,p,tab_fin)
+                fin+=1
+                game.mainiteration()
+        
+        if fin==10 :
+            terminé=True
+            print('Fin du tour : distribution des gains')
+            for v in range(len(goalStates)):
+                gagnants=[]
+                for g in range(nbPlayers):
+                    if posPlayers[g]==goalStates[v] :
+                        gagnants.append(g)
+                if len(gagnants)!=0 :
+                    gagnant=random.choice(gagnants)
+                    liste_gains[gagnant]+=1
+            print('gains_actuels')
+            print(liste_gains)
 
-                print('gains_actuels')
-                print(liste_gains)
-
-                
+            
         
     
     #-------------------------------

@@ -1,0 +1,5 @@
+Les fichiers modifiés sont :
+-pathfinding.py, qui contient l'algorithme A* et les fonctions qu'il utilise (neighbors et heuristic )
+-strats.py, qui contient les stratégies de base de sélection de restaurant (une stratégie qui selectionne toujours le même pour un même joueur, une stratégie de sélection aléatoire et une stratégie qui sélectionne le restaurant le plus proche du joueur ) et une stratégie d'analyse gérée par une classe pour stocker les données et qui choisit le restaurant le moins visité(en excluant du comptage le restaurant visité par l'utilisateur de la stratégie).
+-kalkota_restaurants.py, qui initialise le restaurant cible selon la stratégie, et où la boucle de déplacement se réduit à parcourir la liste des coordonnées successives donnée par A*. Lorsque tous les joueurs ont terminé, les gains son distribués et la fréquentation des restaurants est donnée pour la stratégie analytique.
+-kalkota_restaurants_test.py, une version du jeu où seul le joueur 0 se déplace. Utile pour tester A* et les stratégies.

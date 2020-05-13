@@ -35,18 +35,15 @@ class Strat_Analyse(object) :
     def actualiser_resultats(self, i, end_i, list_resultats) :
         for k in range(0,self.nb_goals):
             self.coups_precedents[i][k]+=list_resultats[k]
-        print(self.coups_precedents)
         self.coups_precedents[i][end_i]-=1
 
     def best_strat(self,i):
-        print(self.coups_precedents)
         b_goal=[]
         nb_max=math.inf
         for k in range (0,self.nb_goals):
             if self.coups_precedents[i][k]<=nb_max :
                 nb_max=self.coups_precedents[i][k]
                 b_goal.append(k)
-        print("optimal", b_goal)
         return random.choice(b_goal)
 
 
